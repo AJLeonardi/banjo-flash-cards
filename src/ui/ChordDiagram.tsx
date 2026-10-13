@@ -2,6 +2,9 @@ import { Voicing } from '../music/library';
 
 const STRING_NAMES = ['g', 'D', 'G', 'B', 'D']; // 5th..1st, left to right
 
+/** Position-marker inlays on a typical bluegrass banjo neck (12 is often doubled). */
+const INLAYS = new Set([3, 5, 7, 10, 12, 15, 17]);
+
 /** Vertical chord box: 5 strings (5th on the left), fret numbers under each string. */
 export function ChordDiagram({ voicing, size = 200 }: { voicing: Voicing; size?: number }) {
   const frets = [0, ...voicing.frets]; // 5th string always open
@@ -22,6 +25,15 @@ export function ChordDiagram({ voicing, size = 200 }: { voicing: Voicing; size?:
       {frets.map((_, s) => (
         <line key={s} x1={x(s)} x2={x(s)} y1={top} y2={bottom} stroke="var(--fret)" strokeWidth={1.5} />
       ))}
+      {/* Inlay markers on the 5th-string line (it's always open, so never has a finger dot). */}
+      {Array.from({ length: rows }, (_, i) => first + i)
+        .filter((f) => INLAYS.has(f))
+        .map((f) => {
+          const cy = top + (f - first + 0.5) * dy;
+          const r = Math.min(dx, dy) * 0.12;
+          const ys = f === 12 ? [cy - r * 1.6, cy + r * 1.6] : [cy];
+          return ys.map((y) => <circle key={`${f}-${y}`} cx={x(0)} cy={y} r={r} fill="var(--fret)" />);
+        })}
       {!nut && (
         <text x={left - 8} y={top + dy / 2 + 5} textAnchor="end" fontSize={14} fill="var(--muted)">
           {first}
