@@ -12,6 +12,9 @@ import { MicStatus } from './MicStatus';
 
 type Flash = '' | 'good' | 'bad';
 
+/** For this long after a chord is accepted, hearing that chord again is its sustain, not a mistake. */
+const SUSTAIN_GRACE = 2;
+
 export function Practice({ engine, settings, update }: { engine: AudioEngine; settings: Settings; update: (p: Partial<Settings>) => void }) {
   const seq = useMemo(() => {
     const { maxJump, biasFar } = jumpFor(settings.jumpMode, settings.customJump);
@@ -24,6 +27,8 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
   const [stats, setStats] = useState({ tries: 0, right: 0, streak: 0, best: 0 });
   const cur = useRef(current);
   const busy = useRef(false);
+  /** The chord just accepted, and when: its ring-out mustn't be judged against the next card. */
+  const prev = useRef<{ voicing: Voicing; at: number } | null>(null);
   cur.current = current;
 
   useEffect(() => setCurrent(seq.next()), [seq]);
@@ -65,9 +70,16 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
         // Accept the moment the chord is complete; reject only once the strum is over.
         if (j.verdict === 'correct') {
           engine.endGesture();
+          prev.current = { voicing: target, at: engine.ctx.currentTime };
           return resultRef.current(true, 'Nice!');
         }
         if (!ev.final) return setMessage('Listening…');
+        // Still hearing the last chord ring (or a finger lifting off it): ignore it.
+        const p = prev.current;
+        if (p && ev.onsetTime < p.at + SUSTAIN_GRACE && p.voicing.id !== target.id) {
+          const pj = judge(ev.analysis, p.voicing, { ...DEFAULT_MATCH, checkPosition: settings.checkPosition });
+          if (pj.verdict === 'correct' || (j.heard !== null && j.heard === p.voicing.chordId)) return setMessage('');
+        }
         if (j.verdict === 'unclear') return setMessage("Didn't catch that — strum again");
         if (j.verdict === 'partial') return setMessage('Only heard part of the chord — strum all the strings');
         if (j.verdict === 'wrongPosition')
