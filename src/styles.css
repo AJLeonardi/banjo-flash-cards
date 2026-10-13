@@ -1,0 +1,164 @@
+:root {
+  --bg: #16130f;
+  --surface: #221d17;
+  --surface-2: #2d261e;
+  --border: #3d342a;
+  --text: #f3ead9;
+  --muted: #a99c86;
+  --accent: #e0a446;
+  --accent-ink: #1b140a;
+  --good: #3fae6a;
+  --bad: #d9534f;
+  --good-bg: #173d27;
+  --bad-bg: #4a1a19;
+  --fret: #8a7a62;
+  --dot: #f3ead9;
+  --dot-ink: #16130f;
+  color-scheme: dark;
+}
+:root[data-theme='light'] {
+  --bg: #f7f2e8;
+  --surface: #ffffff;
+  --surface-2: #efe7d8;
+  --border: #d9cdb7;
+  --text: #241d14;
+  --muted: #74685a;
+  --accent: #b5741a;
+  --accent-ink: #ffffff;
+  --good-bg: #d4f0dd;
+  --bad-bg: #f8d7d5;
+  --fret: #9b8c74;
+  --dot: #241d14;
+  --dot-ink: #ffffff;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --bg: #f7f2e8;
+    --surface: #ffffff;
+    --surface-2: #efe7d8;
+    --border: #d9cdb7;
+    --text: #241d14;
+    --muted: #74685a;
+    --accent: #b5741a;
+    --accent-ink: #ffffff;
+    --good-bg: #d4f0dd;
+    --bad-bg: #f8d7d5;
+    --fret: #9b8c74;
+    --dot: #241d14;
+    --dot-ink: #ffffff;
+    color-scheme: light;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+#root { min-height: 100dvh; }
+
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100dvh;
+}
+.topbar { display: flex; align-items: center; gap: 12px; }
+.topbar h1 { font-size: 20px; margin: 0; flex: 1; }
+.topbar .back { padding: 8px 12px; }
+
+h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 8px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.spacer { flex: 1; }
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-height: 44px;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.5; cursor: default; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.big { font-size: 20px; padding: 18px; width: 100%; }
+button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.seg { display: flex; gap: 0; }
+.seg button { border-radius: 0; flex: 1; }
+.seg button:first-child { border-radius: 10px 0 0 10px; }
+.seg button:last-child { border-radius: 0 10px 10px 0; }
+.seg button + button { border-left: none; }
+
+input[type='text'] {
+  font: inherit; width: 100%; padding: 10px 12px; min-height: 44px;
+  border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+}
+input[type='range'] { width: 100%; accent-color: var(--accent); }
+label.toggle { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+label.toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
+
+/* chord grid */
+.grid { display: grid; grid-template-columns: 44px repeat(6, 1fr); gap: 4px; }
+.grid .hdr { font-size: 12px; color: var(--muted); text-align: center; align-self: end; }
+.grid .root { font-weight: 600; align-self: center; }
+.grid button { min-height: 36px; padding: 4px 0; font-size: 13px; border-radius: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { min-height: 36px; padding: 6px 12px; border-radius: 999px; font-size: 14px; }
+.error { color: var(--bad); font-size: 13px; }
+
+/* practice / game stage */
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-radius: 18px;
+  padding: 20px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: background-color 0.25s;
+  position: relative;
+}
+.stage.good { background: var(--good-bg); border-color: var(--good); transition: none; }
+.stage.bad { background: var(--bad-bg); border-color: var(--bad); transition: none; }
+.chord-name { font-size: clamp(64px, 22vw, 120px); font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+.pos-line { font-size: 18px; color: var(--muted); text-align: center; }
+.pos-dots { display: flex; gap: 6px; justify-content: center; }
+.pos-dots span { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--muted); }
+.pos-dots span.on { background: var(--accent); border-color: var(--accent); }
+.message { min-height: 24px; text-align: center; font-size: 16px; }
+.stats { display: flex; justify-content: space-around; text-align: center; }
+.stats b { display: block; font-size: 24px; }
+.stats span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.next { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 18px; }
+.next b { color: var(--text); font-size: 26px; }
+.beats { display: flex; gap: 10px; }
+.beats span { width: 16px; height: 16px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border); }
+.beats span.on { background: var(--accent); border-color: var(--accent); }
+.progress { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.progress div { height: 100%; background: var(--accent); }
+.countin { font-size: 96px; font-weight: 800; color: var(--accent); }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+td, th { padding: 6px 4px; text-align: left; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; }
+
+.meter { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.meter div { height: 100%; background: var(--good); transition: width 0.05s; }
+.debug { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.banner { background: var(--accent); color: var(--accent-ink); border-radius: 12px; padding: 12px; text-align: center; font-weight: 700; }
