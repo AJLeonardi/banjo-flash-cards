@@ -81,12 +81,6 @@ export function ChordPicker({ settings, update }: { settings: Settings; update: 
         </div>
         <div className="muted small">Each chord's voicings counted from the nut: 1 is the lowest. {voicings} chord shapes selected.</div>
       </div>
-
-      <JumpPicker
-        mode={settings.jumpMode}
-        custom={settings.customJump}
-        onChange={(jumpMode, customJump) => update({ jumpMode, customJump })}
-      />
     </div>
   );
 }
@@ -110,7 +104,7 @@ function Row({ name, root, selected, toggle }: { name: string; root: number; sel
 export function JumpPicker({ mode, custom, onChange }: { mode: JumpMode; custom: number; onChange: (m: JumpMode, c: number) => void }) {
   return (
     <div className="card stack">
-      <h2>Max fret jump between chords</h2>
+      <h2>Max fret jump</h2>
       <div className="seg">
         {(['easy', 'medium', 'hard', 'custom'] as JumpMode[]).map((m) => (
           <button key={m} className={mode === m ? 'on' : ''} onClick={() => onChange(m, custom)}>

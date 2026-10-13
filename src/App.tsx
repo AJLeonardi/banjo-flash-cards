@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { AudioEngine } from './audio/engine';
 import { loadSettings, saveSettings, Settings } from './settings';
 import { Calibrate } from './ui/Calibrate';
-import { ChordPicker } from './ui/ChordPicker';
+import { buildPool } from './game/sequencer';
+import { ChordPicker, JumpPicker } from './ui/ChordPicker';
 import { Game } from './ui/Game';
 import { HighScores } from './ui/HighScores';
 import { Practice } from './ui/Practice';
@@ -69,7 +70,7 @@ export function App() {
   };
 
   return (
-    <div className="app">
+    <div className={`app screen-${screen}`}>
       <div className="topbar">
         {screen !== 'home' && (
           <button className="icon" aria-label="Back" onClick={() => setScreen(screen === 'calibrate' ? back : 'home')}>
@@ -88,17 +89,39 @@ export function App() {
       {micError && <div className="card error">{micError}</div>}
 
       {screen === 'home' && (
-        <>
-          <ChordPicker settings={settings} update={update} />
-          <div className="row">
-            <button className="primary big" style={{ flex: 1 }} disabled={!settings.chords.length} onClick={() => go('practice')}>
-              Practice
-            </button>
-            <button className="primary big" style={{ flex: 1 }} disabled={!settings.chords.length} onClick={() => go('game')}>
-              Game
-            </button>
+        // Settings on the left, actions on the right (landscape); in portrait the
+        // Practice/Game buttons are pinned to the bottom of the screen.
+        <div className="home">
+          <div className="home-settings">
+            <ChordPicker settings={settings} update={update} />
           </div>
-        </>
+          <div className="home-actions">
+            <JumpPicker
+              mode={settings.jumpMode}
+              custom={settings.customJump}
+              onChange={(jumpMode, customJump) => update({ jumpMode, customJump })}
+            />
+            <div className="cta">
+              <div className="cta-summary">
+                {settings.chords.length ? (
+                  <>
+                    <b>{settings.chords.join(' ')}</b> · {buildPool(settings.chords, settings.positions).length} shapes
+                  </>
+                ) : (
+                  'Pick some chords to start'
+                )}
+              </div>
+              <div className="cta-buttons">
+                <button className="primary big" disabled={!settings.chords.length} onClick={() => go('practice')}>
+                  Practice
+                </button>
+                <button className="primary big" disabled={!settings.chords.length} onClick={() => go('game')}>
+                  Game
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
       {screen === 'practice' && engine && <Practice engine={engine} settings={settings} update={update} />}
       {screen === 'game' && engine && <Game engine={engine} settings={settings} update={update} onCalibrate={() => go('calibrate')} />}
