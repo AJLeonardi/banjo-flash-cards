@@ -1,4 +1,4 @@
-import { CHORD_BY_ID, fretPattern, Voicing } from '../music/library';
+import { CHORD_BY_ID, Voicing } from '../music/library';
 import { ChordDiagram } from './ChordDiagram';
 
 /** Chord name and where to play it, big enough to read at a glance from the banjo. */
@@ -19,9 +19,6 @@ export function ChordCard({ voicing, showDiagram, diagramSize }: { voicing: Voic
             </>
           )}
         </span>
-      </div>
-      <div className="shape-line">
-        {voicing.shapeName} · <b>{fretPattern(voicing)}</b>
       </div>
       <div className="pos-dots" aria-label={`Voicing ${voicing.position} of ${total}, counting from the nut`}>
         {Array.from({ length: total }, (_, i) => (
