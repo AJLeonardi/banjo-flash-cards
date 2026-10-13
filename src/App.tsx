@@ -7,6 +7,7 @@ import { Game } from './ui/Game';
 import { HighScores } from './ui/HighScores';
 import { Practice } from './ui/Practice';
 import { SettingsScreen } from './ui/SettingsScreen';
+import { BackIcon, GearIcon, TrophyIcon } from './ui/Icons';
 
 type Screen = 'home' | 'practice' | 'game' | 'scores' | 'settings' | 'calibrate';
 
@@ -71,15 +72,15 @@ export function App() {
     <div className="app">
       <div className="topbar">
         {screen !== 'home' && (
-          <button className="back" onClick={() => setScreen(screen === 'calibrate' ? back : 'home')}>
-            ←
+          <button className="icon" aria-label="Back" onClick={() => setScreen(screen === 'calibrate' ? back : 'home')}>
+            <BackIcon />
           </button>
         )}
         <h1>{TITLES[screen]}</h1>
         {screen === 'home' && (
           <>
-            <button onClick={() => go('scores')} aria-label="High scores">🏆</button>
-            <button onClick={() => go('settings')} aria-label="Settings">⚙︎</button>
+            <button className="icon" onClick={() => go('scores')} aria-label="High scores"><TrophyIcon /></button>
+            <button className="icon" onClick={() => go('settings')} aria-label="Settings"><GearIcon /></button>
           </>
         )}
       </div>
@@ -106,6 +107,7 @@ export function App() {
       )}
       {screen === 'scores' && <HighScores />}
       {screen === 'settings' && <SettingsScreen settings={settings} update={update} onCalibrate={() => go('calibrate')} />}
+      <div className="version">{__APP_VERSION__}</div>
     </div>
   );
 }

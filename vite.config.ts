@@ -2,10 +2,23 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { VitePWA } from 'vite-plugin-pwa';
+import { execSync } from 'node:child_process';
+
+// Version = number of commits, so it goes up by one with every commit.
+// (CI checks out full history for this; see deploy.yml.)
+function version(command: string): string {
+  try {
+    const n = execSync('git rev-list --count HEAD').toString().trim();
+    return command === 'build' ? `v${n}` : `v${n}-dev`;
+  } catch {
+    return 'dev';
+  }
+}
 
 // GitHub Pages serves the app from /banjo-flash-cards/.
 export default defineConfig(({ command, mode }) => ({
   base: command === 'build' ? '/banjo-flash-cards/' : '/',
+  define: { __APP_VERSION__: JSON.stringify(version(command)) },
   plugins: [
     react(),
     // Phones only allow the mic over https; `npm run dev:https` serves a self-signed cert on the LAN.
