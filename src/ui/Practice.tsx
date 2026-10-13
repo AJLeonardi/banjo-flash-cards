@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AudioEngine } from '../audio/engine';
 import { DEFAULT_MATCH, judge } from '../audio/matcher';
 import { buildPool, Sequencer } from '../game/sequencer';
-import { Voicing } from '../music/library';
+import { CHORD_BY_ID, fretLabel, Voicing } from '../music/library';
 import { Settings } from '../settings';
 import { keepAwake } from '../wakelock';
 import { jumpFor } from './ChordPicker';
@@ -65,7 +65,10 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
         if (j.verdict === 'correct') return resultRef.current(true, 'Nice!');
         if (j.verdict === 'partial') return resultRef.current(false, 'Only heard part of the chord — strum all the strings');
         if (j.verdict === 'wrongPosition')
-          return resultRef.current(false, `Right chord, but that sounded like position ${j.heardPosition}`);
+          return resultRef.current(
+            false,
+            `Right chord, wrong spot — that sounded like ${fretLabel(CHORD_BY_ID[target.chordId].voicings[j.heardPosition! - 1]).toLowerCase()}`,
+          );
         resultRef.current(false, `That sounded like ${j.heard}`);
       }),
     [engine, settings.checkPosition],

@@ -92,6 +92,17 @@ export const CHORD_BY_ID: Record<string, Chord> = Object.fromEntries(CHORDS.map(
 export const ALL_VOICINGS: Voicing[] = CHORDS.flatMap((c) => c.voicings);
 export const VOICING_BY_ID: Record<string, Voicing> = Object.fromEntries(ALL_VOICINGS.map((v) => [v.id, v]));
 
+/**
+ * Where the chord sits, named by its lowest fret: the index-finger fret, which is the
+ * "5fr" / Roman-numeral marker on chord charts. Chords using open strings are "Open".
+ */
+export function fretLabel(v: Voicing): string {
+  return v.hasOpen ? 'Open' : `Fret ${v.minFret}`;
+}
+
+/** Fret numbers for strings 4→1, e.g. "5-4-3-3". */
+export const fretPattern = (v: Voicing) => v.frets.join('-');
+
 /** "open" for chords near the nut with open strings, else "frets 4–7". */
 export function fretRangeLabel(v: Voicing): string {
   if (v.maxFret === 0) return 'open';

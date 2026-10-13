@@ -39,31 +39,31 @@ const G = 7, A = 9, Bb = 10, C = 0, D = 2, Eb = 3;
 
 export const SHAPES: Record<ChordType, Shape[]> = {
   maj: [
-    { name: 'Barre', refRoot: G, frets: [0, 0, 0, 0], period: 12 },
+    { name: 'Barre shape', refRoot: G, frets: [0, 0, 0, 0], period: 12 },
     { name: 'F shape', refRoot: G, frets: [5, 4, 3, 5], period: 12 },
     { name: 'D shape', refRoot: G, frets: [9, 7, 8, 9], period: 12 },
   ],
   min: [
-    { name: 'Barre minor', refRoot: A, frets: [2, 2, 1, 2], period: 12 },
-    { name: 'F shape minor', refRoot: G, frets: [5, 3, 3, 5], period: 12 },
-    { name: 'D shape minor', refRoot: G, frets: [8, 7, 8, 8], period: 12 },
+    { name: 'Barre shape', refRoot: A, frets: [2, 2, 1, 2], period: 12 },
+    { name: 'F shape', refRoot: G, frets: [5, 3, 3, 5], period: 12 },
+    { name: 'D shape', refRoot: G, frets: [8, 7, 8, 8], period: 12 },
   ],
   '7': [
-    { name: '7th (4th string up 3)', refRoot: G, frets: [3, 0, 0, 0], period: 12 },
-    { name: '7th (F shape)', refRoot: G, frets: [3, 4, 3, 5], period: 12 },
-    { name: '7th (1st string flat 7)', refRoot: G, frets: [5, 4, 3, 3], period: 12 },
+    { name: 'Barre shape', refRoot: G, frets: [3, 0, 0, 0], period: 12 },
+    { name: 'F shape, 7th on 4th string', refRoot: G, frets: [3, 4, 3, 5], period: 12 },
+    { name: 'F shape, 7th on 1st string', refRoot: G, frets: [5, 4, 3, 3], period: 12 },
   ],
   m7: [
-    { name: 'm7 (4th string up 3)', refRoot: A, frets: [5, 2, 1, 2], period: 12 },
-    { name: 'm7 (F shape)', refRoot: G, frets: [3, 3, 3, 5], period: 12 },
-    { name: 'm7 (1st string flat 7)', refRoot: G, frets: [5, 3, 3, 3], period: 12 },
+    { name: 'Barre shape', refRoot: A, frets: [5, 2, 1, 2], period: 12 },
+    { name: 'F shape, 7th on 4th string', refRoot: G, frets: [3, 3, 3, 5], period: 12 },
+    { name: 'F shape, 7th on 1st string', refRoot: G, frets: [5, 3, 3, 3], period: 12 },
   ],
   // A 6th chord shares its notes with the relative minor 7th, so the shapes are the m7
   // shapes renamed three frets up (Am7 = C6, Gm7 = Bb6).
   '6': [
-    { name: '6th (barre-ish)', refRoot: C, frets: [5, 2, 1, 2], period: 12 },
-    { name: '6th (F shape)', refRoot: Bb, frets: [3, 3, 3, 5], period: 12 },
-    { name: '6th (1st string)', refRoot: Bb, frets: [5, 3, 3, 3], period: 12 },
+    { name: 'Barre shape', refRoot: C, frets: [5, 2, 1, 2], period: 12 },
+    { name: 'F shape, 6th on 1st string', refRoot: Bb, frets: [3, 3, 3, 5], period: 12 },
+    { name: 'F shape, 6th on 4th string', refRoot: Bb, frets: [5, 3, 3, 3], period: 12 },
   ],
   dim: [{ name: 'Diminished', refRoot: Eb, frets: [1, 2, 1, 4], period: 3 }],
 };

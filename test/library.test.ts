@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHORDS, CHORD_BY_ID, fretRangeLabel, parseChordList } from '../src/music/library';
+import { CHORDS, CHORD_BY_ID, fretLabel, fretPattern, fretRangeLabel, parseChordList } from '../src/music/library';
 import { pc } from '../src/music/notes';
 
 describe('chord library', () => {
@@ -34,6 +34,15 @@ describe('chord library', () => {
     const g = CHORD_BY_ID['G'].voicings.map((v) => v.frets.join('-'));
     expect(g).toEqual(expect.arrayContaining(['0-0-0-0', '5-4-3-5', '9-7-8-9', '12-12-12-12']));
     expect(CHORD_BY_ID['C'].voicings.map((v) => v.frets.join('-'))).toContain('2-0-1-2');
+  });
+
+  it('labels every voicing by its lowest fret, and the shape name tells same-fret voicings apart', () => {
+    expect(CHORD_BY_ID['D'].voicings.map(fretLabel)).toEqual(['Open', 'Fret 2', 'Fret 7', 'Fret 10', 'Fret 14']);
+    for (const c of CHORDS) {
+      const keys = c.voicings.map((v) => `${fretLabel(v)} ${v.shapeName}`);
+      expect(new Set(keys).size, `${c.id}: ${keys.join(' | ')}`).toBe(keys.length);
+    }
+    expect(fretPattern(CHORD_BY_ID['G7'].voicings[2])).toBe('5-4-3-3');
   });
 
   it('parses chord lists', () => {

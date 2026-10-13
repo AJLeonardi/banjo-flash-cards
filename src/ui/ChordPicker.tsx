@@ -68,7 +68,7 @@ export function ChordPicker({ settings, update }: { settings: Settings; update: 
       </div>
 
       <div className="card stack">
-        <h2>Positions</h2>
+        <h2>Positions on the neck</h2>
         <div className="chips">
           <button className={settings.positions.length === 0 ? 'on' : ''} onClick={() => update({ positions: [] })}>
             All
@@ -79,7 +79,7 @@ export function ChordPicker({ settings, update }: { settings: Settings; update: 
             </button>
           ))}
         </div>
-        <div className="muted small">Position 1 is closest to the nut. {voicings} chord shapes selected.</div>
+        <div className="muted small">Each chord's voicings counted from the nut: 1 is the lowest. {voicings} chord shapes selected.</div>
       </div>
 
       <JumpPicker

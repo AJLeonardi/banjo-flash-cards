@@ -7,7 +7,7 @@ import { Difficulty, DIFFICULTIES, GAME_SECONDS } from '../game/difficulty';
 import { addScore, tableKey } from '../game/highscores';
 import { GameScorer, targetTimes } from '../game/scoring';
 import { buildPool, Sequencer } from '../game/sequencer';
-import { VOICING_BY_ID } from '../music/library';
+import { CHORD_BY_ID, fretLabel, VOICING_BY_ID } from '../music/library';
 import { Settings } from '../settings';
 import { keepAwake } from '../wakelock';
 import { ChordCard } from './ChordCard';
@@ -131,7 +131,7 @@ function ResultsCard({ r }: { r: Results }) {
       )}
       {r.missed.length > 0 && (
         <div className="small">
-          Most missed: {r.missed.map(([id, n]) => `${id.replace('@', ' pos ')} (${n})`).join(', ')}
+          Most missed: {r.missed.map(([id, n]) => `${VOICING_BY_ID[id].chordId} ${fretLabel(VOICING_BY_ID[id]).toLowerCase()} (${n})`).join(', ')}
         </div>
       )}
     </div>
@@ -190,7 +190,7 @@ function Playing({ engine, settings, bpm, maxJump, onDone, onQuit }: {
       strum(ev.onsetTime - latency, (id) => {
         const j = judge(ev.analysis, VOICING_BY_ID[id], { ...DEFAULT_MATCH, checkPosition: settings.checkPosition });
         const heard =
-          j.verdict === 'wrongPosition' ? `position ${j.heardPosition}` : j.verdict === 'partial' ? 'part of the chord' : j.heard;
+          j.verdict === 'wrongPosition' ? `the ${fretLabel(CHORD_BY_ID[VOICING_BY_ID[id].chordId].voicings[j.heardPosition! - 1]).toLowerCase()} one` : j.verdict === 'partial' ? 'part of the chord' : j.heard;
         return { ok: j.verdict === 'correct', heard };
       }),
     );
@@ -255,7 +255,7 @@ function Playing({ engine, settings, bpm, maxJump, onDone, onQuit }: {
         </div>
         {next && (
           <div className="next">
-            next <b>{VOICING_BY_ID[next.voicingId].chordId}</b> pos {VOICING_BY_ID[next.voicingId].position}
+            next <b>{VOICING_BY_ID[next.voicingId].chordId}</b> {fretLabel(VOICING_BY_ID[next.voicingId]).toLowerCase()}
           </div>
         )}
         <div className="message">{message}</div>
