@@ -139,9 +139,17 @@ label.toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
 }
 .stage.good { background: var(--good-bg); border-color: var(--good); transition: none; }
 .stage.bad { background: var(--bad-bg); border-color: var(--bad); transition: none; }
-.chord-head { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
-.chord-name { font-size: clamp(64px, 22vw, 120px); font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
-.chord-fret { font-size: clamp(36px, 11vw, 60px); font-weight: 800; line-height: 1; color: var(--accent); text-transform: uppercase; letter-spacing: 0.02em; }
+.chord-head { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+/* The chord is the thing to read first: biggest, heaviest, accent colour. */
+.chord-name { font-size: clamp(88px, 30vw, 150px); font-weight: 800; line-height: 0.95; letter-spacing: -0.03em; color: var(--accent); }
+/* Where to play it: clearly legible, but a quieter neutral pill. */
+.chord-fret {
+  display: inline-flex; align-items: baseline; gap: 8px;
+  padding: 4px 16px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+}
+.chord-fret small { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.chord-fret b { font-size: clamp(28px, 8vw, 38px); font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .shape-line { font-size: 17px; color: var(--muted); text-align: center; }
 .shape-line b { color: var(--text); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
 .pos-dots { display: flex; gap: 6px; justify-content: center; }

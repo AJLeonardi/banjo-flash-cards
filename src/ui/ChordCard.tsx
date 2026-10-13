@@ -1,4 +1,4 @@
-import { CHORD_BY_ID, fretLabel, fretPattern, Voicing } from '../music/library';
+import { CHORD_BY_ID, fretPattern, Voicing } from '../music/library';
 import { ChordDiagram } from './ChordDiagram';
 
 /** Chord name and where to play it, big enough to read at a glance from the banjo. */
@@ -8,7 +8,17 @@ export function ChordCard({ voicing, showDiagram, diagramSize }: { voicing: Voic
     <>
       <div className="chord-head">
         <span className="chord-name">{voicing.chordId}</span>
-        <span className="chord-fret">{fretLabel(voicing)}</span>
+        {/* Named by its lowest fret (the chart "5fr" marker); open-string voicings say "Open". */}
+        <span className="chord-fret">
+          {voicing.hasOpen ? (
+            <b>Open</b>
+          ) : (
+            <>
+              <small>Fret</small>
+              <b>{voicing.minFret}</b>
+            </>
+          )}
+        </span>
       </div>
       <div className="shape-line">
         {voicing.shapeName} · <b>{fretPattern(voicing)}</b>
