@@ -144,12 +144,16 @@ label.toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
 .chord-name { font-size: clamp(88px, 30vw, 150px); font-weight: 800; line-height: 0.95; letter-spacing: -0.03em; color: var(--accent); }
 /* Where to play it: clearly legible, but a quieter neutral pill. */
 .chord-fret {
-  display: inline-flex; align-items: baseline; gap: 8px;
-  padding: 4px 16px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 10px 18px; border-radius: 999px;
   background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
 }
+/* Trim each line box to the letters' cap height, so "FRET" and the digits (which have
+   no descenders) centre optically instead of sitting high. Browsers without text-box
+   support fall back to line-height: 1, which is close. */
+.chord-fret small, .chord-fret b { line-height: 1; text-box: trim-both cap alphabetic; }
 .chord-fret small { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
-.chord-fret b { font-size: clamp(28px, 8vw, 38px); font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.chord-fret b { font-size: clamp(28px, 8vw, 38px); font-weight: 700; font-variant-numeric: tabular-nums; }
 .shape-line { font-size: 17px; color: var(--muted); text-align: center; }
 .shape-line b { color: var(--text); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
 .pos-dots { display: flex; gap: 6px; justify-content: center; }
