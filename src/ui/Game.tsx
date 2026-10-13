@@ -12,6 +12,7 @@ import { Settings } from '../settings';
 import { keepAwake } from '../wakelock';
 import { ChordCard } from './ChordCard';
 import { DebugMeter } from './DebugMeter';
+import { MicStatus } from './MicStatus';
 
 interface Run {
   scorer: GameScorer;
@@ -188,7 +189,9 @@ function Playing({ engine, settings, bpm, maxJump, onDone, onQuit }: {
     const offStrum = engine.onStrum((ev) =>
       strum(ev.onsetTime - latency, (id) => {
         const j = judge(ev.analysis, VOICING_BY_ID[id], { ...DEFAULT_MATCH, checkPosition: settings.checkPosition });
-        return { ok: j.verdict === 'correct', heard: j.verdict === 'wrongPosition' ? `position ${j.heardPosition}` : j.heard };
+        const heard =
+          j.verdict === 'wrongPosition' ? `position ${j.heardPosition}` : j.verdict === 'partial' ? 'part of the chord' : j.heard;
+        return { ok: j.verdict === 'correct', heard };
       }),
     );
     const onKey = (e: KeyboardEvent) => {
@@ -241,6 +244,7 @@ function Playing({ engine, settings, bpm, maxJump, onDone, onQuit }: {
         <button onClick={onQuit}>Quit</button>
       </div>
       <div className="progress"><div style={{ width: `${progress * 100}%` }} /></div>
+      <MicStatus engine={engine} />
       <div className={`stage ${flash}`}>
         {countIn !== null && <div className="countin">{countIn}</div>}
         <ChordCard voicing={VOICING_BY_ID[cur.voicingId]} showDiagram={settings.showDiagram} diagramSize={170} />
@@ -256,7 +260,7 @@ function Playing({ engine, settings, bpm, maxJump, onDone, onQuit }: {
         )}
         <div className="message">{message}</div>
       </div>
-      {settings.debug && <DebugMeter engine={engine} />}
+      {settings.debug && <DebugMeter engine={engine} target={VOICING_BY_ID[cur.voicingId]} />}
     </>
   );
 }

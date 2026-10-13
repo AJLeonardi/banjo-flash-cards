@@ -6,6 +6,12 @@ import './styles.css';
 
 registerSW({ immediate: true });
 
+// The mic is released on pagehide; if the browser later restores this page from its
+// back/forward cache, start fresh rather than show screens with no mic behind them.
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) location.reload();
+});
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

@@ -40,6 +40,14 @@ export function App() {
     if (engine) engine.sensitivity = settings.sensitivity;
   }, [engine, settings.sensitivity]);
 
+  // Only hold the mic on screens that listen; leaving them turns the mic off.
+  useEffect(() => {
+    if (engine && !NEEDS_MIC.includes(screen)) {
+      engine.stop();
+      setEngine(null);
+    }
+  }, [engine, screen]);
+
   // Must run inside a tap: iOS only allows audio + mic from a user gesture.
   const go = async (s: Screen) => {
     setBack(screen === 'calibrate' ? back : screen);

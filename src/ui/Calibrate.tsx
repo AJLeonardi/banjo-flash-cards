@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AudioEngine } from '../audio/engine';
 import { Metronome } from '../audio/metronome';
 import { Settings } from '../settings';
+import { MicStatus } from './MicStatus';
 
 const BPM = 80;
 const LEAD = 4;
@@ -53,6 +54,7 @@ export function Calibrate({ engine, settings, update, onDone }: { engine: AudioE
   return (
     <div className="card stack">
       <h2>Timing calibration</h2>
+      <MicStatus engine={engine} />
       <p className="small">
         Phones and Bluetooth headphones add delay between the click and what the mic hears. After 4 count-in clicks, strum any chord exactly on each of the next {COUNT} clicks.
         Use the same headphones/speaker you'll play games with.

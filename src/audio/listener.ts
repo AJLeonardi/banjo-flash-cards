@@ -9,6 +9,9 @@ export const EVAL_DELAY = 0.22;
 export interface StrumEvent {
   onsetTime: number;
   analysis: Analysis;
+  /** The audio around the strum (debug: lets a player save real samples for tuning). */
+  samples: Float32Array;
+  sampleRate: number;
 }
 
 export class ListenerCore {
@@ -29,7 +32,8 @@ export class ListenerCore {
       // Trim so the window ends ~EVAL_DELAY after the strum (the analyzer uses the last 0.17 s).
       const over = Math.max(0, Math.round((now - onsetTime - EVAL_DELAY) * this.sampleRate));
       const end = Math.max(0, samples.length - over);
-      return { onsetTime, analysis: analyze(samples.subarray(0, end), this.sampleRate) };
+      const window = samples.subarray(0, end);
+      return { onsetTime, analysis: analyze(window, this.sampleRate), samples: window.slice(), sampleRate: this.sampleRate };
     }
     return null;
   }

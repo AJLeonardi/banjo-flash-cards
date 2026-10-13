@@ -26,6 +26,8 @@ export interface Analysis {
   chroma: Float32Array;
   /** Best voicing score per pitch-class set (chord identity). Em7 and G6 share a key. */
   pcKeyScores: Map<string, number>;
+  /** Best voicing id per pitch-class set. */
+  bestVoicing: Map<string, string>;
   /** Score per voicing id (position). */
   voicingScores: Map<string, number>;
 }
@@ -104,10 +106,14 @@ export function analyze(samples: Float32Array, sampleRate: number): Analysis {
   const chroma = fold(semis);
   const pcKeyScores = new Map<string, number>();
   const voicingScores = new Map<string, number>();
+  const bestVoicing = new Map<string, string>();
   for (const t of TEMPLATES) {
     const s = cosine(semis, t.semis);
     voicingScores.set(t.voicing.id, s);
-    if (s - t.penalty > (pcKeyScores.get(t.pcKey) ?? -1)) pcKeyScores.set(t.pcKey, s - t.penalty);
+    if (s - t.penalty > (pcKeyScores.get(t.pcKey) ?? -1)) {
+      pcKeyScores.set(t.pcKey, s - t.penalty);
+      bestVoicing.set(t.pcKey, t.voicing.id);
+    }
   }
-  return { rms: rmsOf(samples), semis, chroma, pcKeyScores, voicingScores };
+  return { rms: rmsOf(samples), semis, chroma, pcKeyScores, bestVoicing, voicingScores };
 }

@@ -11,21 +11,25 @@ function rng(seed: number) {
 }
 
 export function pluck(out: Float32Array, start: number, midi: number, gain: number, seed: number, decay = 0.996) {
+  // y[t] = decay * avg(y[t-L], y[t-L-1]) has a delay of L + 0.5 samples; the rest of
+  // the period comes from linear interpolation, so the pitch is accurate to a few cents.
   const period = SR / midiToFreq(midi);
-  const n = Math.floor(period);
-  const frac = period - n;
-  const buf = new Float32Array(n + 2);
+  const L = Math.floor(period - 0.5);
+  const frac = period - 0.5 - L;
+  const n = out.length - start;
+  if (n <= 0) return;
+  const y = new Float32Array(n);
   const r = rng(seed);
-  for (let i = 0; i < buf.length; i++) buf[i] = r() * 2;
-  let idx = 0;
-  for (let t = start; t < out.length; t++) {
-    const a = buf[idx % buf.length];
-    const b = buf[(idx + 1) % buf.length];
-    const y = a * (1 - frac) + b * frac;
-    out[t] += y * gain;
-    buf[idx % buf.length] = decay * 0.5 * (a + b);
-    idx++;
+  const burst = Math.min(n, L + 2);
+  for (let t = 0; t < burst; t++) y[t] = r() * 2;
+  let mean = 0;
+  for (let t = 0; t < burst; t++) mean += y[t] / burst;
+  for (let t = 0; t < burst; t++) y[t] -= mean; // no DC, or it never decays
+  for (let t = L + 2; t < n; t++) {
+    const a = y[t - L], b = y[t - L - 1], c = y[t - L - 2];
+    y[t] = decay * 0.5 * ((1 - frac) * (a + b) + frac * (b + c));
   }
+  for (let t = 0; t < n; t++) out[start + t] += y[t] * gain;
 }
 
 /** Strum notes low→high, 12 ms apart, starting at `at` seconds. Includes the 5th string by default. */

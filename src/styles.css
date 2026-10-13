@@ -162,3 +162,9 @@ th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: upp
 .meter div { height: 100%; background: var(--good); transition: width 0.05s; }
 .debug { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
 .banner { background: var(--accent); color: var(--accent-ink); border-radius: 12px; padding: 12px; text-align: center; font-weight: 700; }
+
+.micstatus { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.micstatus .meter { flex: 1; }
+.micstatus .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--bad); }
+.micstatus .dot.live { background: var(--good); }
+.micmsg { flex-basis: 100%; font-size: 13px; color: var(--accent); }

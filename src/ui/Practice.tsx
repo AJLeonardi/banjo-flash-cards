@@ -8,6 +8,7 @@ import { keepAwake } from '../wakelock';
 import { jumpFor } from './ChordPicker';
 import { ChordCard } from './ChordCard';
 import { DebugMeter } from './DebugMeter';
+import { MicStatus } from './MicStatus';
 
 type Flash = '' | 'good' | 'bad';
 
@@ -19,7 +20,7 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
 
   const [current, setCurrent] = useState<Voicing>(() => seq.next());
   const [flash, setFlash] = useState<Flash>('');
-  const [message, setMessage] = useState('Strum or pinch all the strings');
+  const [message, setMessage] = useState('Strum all the strings');
   const [stats, setStats] = useState({ tries: 0, right: 0, streak: 0, best: 0 });
   const cur = useRef(current);
   const busy = useRef(false);
@@ -62,6 +63,7 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
         const j = judge(ev.analysis, target, { ...DEFAULT_MATCH, checkPosition: settings.checkPosition });
         if (j.verdict === 'unclear') return setMessage("Didn't catch that — strum again");
         if (j.verdict === 'correct') return resultRef.current(true, 'Nice!');
+        if (j.verdict === 'partial') return resultRef.current(false, 'Only heard part of the chord — strum all the strings');
         if (j.verdict === 'wrongPosition')
           return resultRef.current(false, `Right chord, but that sounded like position ${j.heardPosition}`);
         resultRef.current(false, `That sounded like ${j.heard}`);
@@ -82,6 +84,7 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
   const pct = stats.tries ? Math.round((100 * stats.right) / stats.tries) : 0;
   return (
     <>
+      <MicStatus engine={engine} />
       <div className={`stage ${flash}`}>
         <ChordCard voicing={current} showDiagram={settings.showDiagram} />
         <div className="message">{message}</div>
@@ -98,7 +101,7 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
         <span className="spacer" />
         <button onClick={() => { setCurrent(seq.next()); setMessage(''); }}>Skip →</button>
       </div>
-      {settings.debug && <DebugMeter engine={engine} />}
+      {settings.debug && <DebugMeter engine={engine} target={current} />}
     </>
   );
 }
