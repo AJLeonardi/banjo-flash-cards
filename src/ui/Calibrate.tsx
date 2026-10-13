@@ -25,7 +25,10 @@ export function Calibrate({ engine, settings, update, onDone }: { engine: AudioE
     const metro = new Metronome(ctx, Math.max(settings.clickVolume, 0.5));
     metro.start(t0, BPM, 4, clicks[clicks.length - 1]);
     const offsets: number[] = [];
+    let lastGesture = -1;
     const off = engine.onStrum((ev) => {
+      if (ev.onsetTime === lastGesture) return; // one strum is checked several times; count it once
+      lastGesture = ev.onsetTime;
       const near = clicks.slice(LEAD).reduce((a, b) => (Math.abs(b - ev.onsetTime) < Math.abs(a - ev.onsetTime) ? b : a));
       const d = ev.onsetTime - near;
       if (Math.abs(d) < 0.35) {

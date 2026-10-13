@@ -32,12 +32,15 @@ export function pluck(out: Float32Array, start: number, midi: number, gain: numb
   for (let t = 0; t < n; t++) out[start + t] += y[t] * gain;
 }
 
-/** Strum notes low→high, 12 ms apart, starting at `at` seconds. Includes the 5th string by default. */
-export function strum(midis: number[], opts: { at?: number; dur?: number; drone?: boolean; seed?: number; noise?: number; into?: Float32Array } = {}) {
-  const { at = 0.1, dur = 0.6, drone = true, seed = 1, noise = 0.002 } = opts;
+/** Strum notes low→high, `gap` apart (12 ms = a quick strum), starting at `at` seconds. Includes the 5th string by default. */
+export function strum(
+  midis: number[],
+  opts: { at?: number; dur?: number; drone?: boolean; seed?: number; noise?: number; into?: Float32Array; gap?: number } = {},
+) {
+  const { at = 0.1, dur = 0.6, drone = true, seed = 1, noise = 0.002, gap = 0.012 } = opts;
   const out = opts.into ?? new Float32Array(Math.round(SR * dur));
   const notes = drone ? [FIFTH_STRING, ...midis] : midis;
-  notes.forEach((m, i) => pluck(out, Math.round(SR * (at + i * 0.012)), m, 0.25, seed * 31 + i));
+  notes.forEach((m, i) => pluck(out, Math.round(SR * (at + i * gap)), m, 0.25, seed * 31 + i));
   const r = rng(seed + 999);
   for (let i = 0; i < out.length; i++) out[i] += r() * noise;
   return out;

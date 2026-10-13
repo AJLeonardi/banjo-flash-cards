@@ -77,6 +77,11 @@ export class AudioEngine {
     this.core.onsets.opts.sensitivity = s;
   }
 
+  /** The current strum has been accepted: stop judging it, and ignore its tail for `cooldown` s. */
+  endGesture(cooldown = 0.5) {
+    this.core.endGesture(this.ctx.currentTime, cooldown);
+  }
+
   onStrum(h: StrumHandler): () => void {
     this.handlers.add(h);
     return () => this.handlers.delete(h);

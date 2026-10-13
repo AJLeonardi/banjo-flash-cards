@@ -100,6 +100,23 @@ describe('detector on synthesized strums', () => {
     expect(judge(run(g7.midi), g7).verdict).toBe('correct');
   });
 
+  it('tells octave-apart positions apart (G at fret 15 vs fret 3)', () => {
+    const g = CHORD_BY_ID['G'].voicings;
+    const low = g.find((v) => v.frets.join() === '5,4,3,5')!;
+    const high = g.find((v) => v.frets.join() === '17,16,15,17')!;
+    const highA = run(high.midi, 2);
+    expect(judge(highA, high).verdict).toBe('correct');
+    expect(judge(highA, low).verdict).toBe('wrongPosition');
+    const lowA = run(low.midi, 2);
+    expect(judge(lowA, low).verdict).toBe('correct');
+    expect(judge(lowA, high).verdict).toBe('wrongPosition');
+    // A real banjo body can make the low octave hum a little under a high chord.
+    const hum = strum(high.midi, { seed: 6 });
+    const lowHum = strum(low.midi.slice(0, 3), { seed: 7, drone: false });
+    for (let i = 0; i < hum.length; i++) hum[i] += 0.15 * lowHum[i];
+    expect(judge(analyze(windowAfter(hum, 0.1), SR), high).verdict).toBe('correct');
+  });
+
   it('calls silence unclear', () => {
     const silence = new Float32Array(SR * 0.4).map(() => (Math.random() - 0.5) * 0.001);
     expect(judge(analyze(silence, SR), CHORD_BY_ID['G'].voicings[0]).verdict).not.toBe('correct');

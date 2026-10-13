@@ -27,10 +27,14 @@ const overtone = (a: Analysis, m: number) =>
 /**
  * How many of the voicing's fretted notes are clearly sounding, i.e. present and not
  * explainable as an overtone of a lower note. Also returns how many distinct note names
- * those cover. A lone D3 also shows D4 and A4 (its overtones), but counts as one note.
+ * those cover. A lone D3 also shows D4 and A4 (its overtones), but counts as one note
+ * (and one note name, which is what keeps a single string from passing).
  */
 export function stringsHeard(a: Analysis, v: Voicing): { notes: number; names: number } {
-  const heard = [...new Set(v.midi)].filter((m) => sounding(a, m) && !overtone(a, m));
+  const notes = new Set(v.midi);
+  // If the voicing itself has the octave below (G4 and G5 in a fret-15 G), the upper
+  // note can't be told from that note's overtone, so give it the benefit of the doubt.
+  const heard = [...notes].filter((m) => sounding(a, m) && (notes.has(m - 12) || !overtone(a, m)));
   return { notes: heard.length, names: new Set(heard.map(pc)).size };
 }
 
@@ -77,32 +81,40 @@ function bestPcKey(a: Analysis): [string, number] {
   return [bestKey, best];
 }
 
+/** Distinct note names clearly ringing anywhere on the fretboard (overtones excluded). */
+function namesRinging(a: Analysis): number {
+  const names = new Set<number>();
+  for (let m = FRETBOARD[0]; m <= FRETBOARD[1]; m++) if (sounding(a, m) && !overtone(a, m)) names.add(pc(m));
+  return names.size;
+}
+
 export function judge(a: Analysis, target: Voicing, opts: MatchOptions = DEFAULT_MATCH): Judgement {
   const [bestKey, best] = bestPcKey(a);
   const chord = CHORD_BY_ID[target.chordId];
   const heard = best >= opts.minScore ? (bestKey === chord.pcKey ? chord.id : CHORD_FOR_PCKEY.get(bestKey)!) : null;
   if (!heard) return { verdict: 'unclear', heard: null, heardPosition: null, score: best };
+  // One or two strings (plus maybe the 5th) aren't a chord yet, whatever they resemble.
+  if (namesRinging(a) < MIN_STRINGS) return { verdict: 'partial', heard: null, heardPosition: null, score: best };
   if (bestKey !== chord.pcKey) return { verdict: 'wrongChord', heard, heardPosition: null, score: best };
 
-  let bestPos = target.position;
-  let bestPosScore = -1;
-  for (const v of chord.voicings) {
-    const s = a.voicingScores.get(v.id) ?? 0;
-    if (s > bestPosScore) [bestPosScore, bestPos] = [s, v.position];
-  }
-  // The voicing we're crediting must actually ring: rules out a lone string whose
-  // overtones happen to resemble the chord.
-  const h = opts.checkPosition
-    ? stringsHeard(a, target)
-    : chord.voicings.map((v) => stringsHeard(a, v)).reduce((x, y) => (y.notes + y.names > x.notes + x.names ? y : x));
-  if (h.notes < MIN_STRINGS || h.names < MIN_STRINGS) return { verdict: 'partial', heard, heardPosition: null, score: best };
+  // Position: prefer the voicing whose own notes ring at their own octave; spectrum
+  // similarity breaks ties. Similarity alone confuses positions an octave apart (G at
+  // fret 3 vs fret 15): one's notes are the other's 2nd harmonics.
+  const heardBy = new Map(chord.voicings.map((v) => [v.id, stringsHeard(a, v)]));
+  const rank = (v: Voicing) => heardBy.get(v.id)!.notes + (a.voicingScores.get(v.id) ?? 0);
+  const bestVoicing = chord.voicings.reduce((x, y) => (rank(y) > rank(x) ? y : x));
 
-  const targetScore = a.voicingScores.get(target.id) ?? 0;
-  const positionOk = !opts.checkPosition || targetScore >= bestPosScore - opts.positionTolerance;
+  // Whatever was played must actually ring as a chord: rules out a few strings whose
+  // overtones happen to resemble it.
+  const complete = (v: Voicing) => heardBy.get(v.id)!.notes >= MIN_STRINGS && heardBy.get(v.id)!.names >= MIN_STRINGS;
+  if (!complete(bestVoicing)) return { verdict: 'partial', heard, heardPosition: null, score: best };
+
+  const positionOk =
+    !opts.checkPosition || (complete(target) && rank(target) >= rank(bestVoicing) - opts.positionTolerance);
   return {
     verdict: positionOk ? 'correct' : 'wrongPosition',
     heard,
-    heardPosition: bestPos,
+    heardPosition: bestVoicing.position,
     score: best,
   };
 }

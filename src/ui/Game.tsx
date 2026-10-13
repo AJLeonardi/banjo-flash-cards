@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AudioEngine } from '../audio/engine';
-import { EVAL_DELAY } from '../audio/listener';
+import { FIRST_EVAL } from '../audio/listener';
 import { DEFAULT_MATCH, judge } from '../audio/matcher';
 import { Metronome } from '../audio/metronome';
 import { Difficulty, DIFFICULTIES, GAME_SECONDS } from '../game/difficulty';
@@ -173,17 +173,18 @@ function Playing({ engine, settings, bpm, maxJump, onDone, onQuit }: {
     void keepAwake(true);
 
     const latency = settings.latencyMs / 1000;
-    const strum = (t: number, judgeFn: (id: string) => { ok: boolean; heard: string | null }) => {
+    const strum = (t: number, judgeFn: (id: string) => { ok: boolean; heard: string | null }, final = true) => {
       const r = run.current!;
       const pending = r.scorer.targets.filter((x) => x.result === 'pending');
       if (!pending.length) return;
       const near = pending.reduce((a, b) => (Math.abs(b.time - t) < Math.abs(a.time - t) ? b : a));
       if (Math.abs(near.time - t) > r.window) return; // off-beat strum: ignored
       const { ok, heard } = judgeFn(near.voicingId);
+      if (ok) engine.endGesture(0.3);
       if (r.scorer.strum(t, near.voicingId, ok)) {
         flashFor('good');
         setMessage('');
-      } else if (heard) setMessage(`Heard ${heard}`);
+      } else if (final && heard) setMessage(`Heard ${heard}`);
     };
 
     const offStrum = engine.onStrum((ev) =>
@@ -192,7 +193,7 @@ function Playing({ engine, settings, bpm, maxJump, onDone, onQuit }: {
         const heard =
           j.verdict === 'wrongPosition' ? `the ${fretLabel(CHORD_BY_ID[VOICING_BY_ID[id].chordId].voicings[j.heardPosition! - 1]).toLowerCase()} one` : j.verdict === 'partial' ? 'part of the chord' : j.heard;
         return { ok: j.verdict === 'correct', heard };
-      }),
+      }, ev.final),
     );
     const onKey = (e: KeyboardEvent) => {
       if (settings.debug && e.key === 'c') strum(ctx.currentTime, () => ({ ok: true, heard: null }));
@@ -203,7 +204,8 @@ function Playing({ engine, settings, bpm, maxJump, onDone, onQuit }: {
     const loop = () => {
       const r = run.current!;
       const now = ctx.currentTime;
-      if (r.scorer.expire(now, EVAL_DELAY + 0.08).length) flashFor('bad');
+      // Allow time for the strum to be heard (a relaxed strum takes a few hundred ms).
+      if (r.scorer.expire(now, FIRST_EVAL + 0.4).length) flashFor('bad');
       setFrame((f) => f + 1);
       if (r.scorer.done && now > r.end) return doneRef.current(r.scorer);
       raf = requestAnimationFrame(loop);

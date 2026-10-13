@@ -1,40 +1,72 @@
-// Ties onset detection to chord analysis: on each strum, wait for the notes to
-// settle (EVAL_DELAY), then analyze the audio just after the strum.
+// Turns onsets into strum *gestures* and analyzes them as they unfold.
+//
+// A strum isn't instantaneous: a relaxed strum or a pinch-and-roll spreads the
+// strings over a few hundred ms. So the first note opens a gesture; while it's
+// open we re-analyze every EVAL_EVERY (the analysis window holds whatever is still
+// ringing, so the chord accumulates). Consumers can accept a check as soon as it's
+// correct (and call endGesture), but should only reject on the `final` check, which
+// comes once the player has stopped adding notes for SETTLE, or after MAX_GESTURE.
 
 import { analyze, Analysis } from './analyzer';
 import { OnsetDetector, OnsetOptions } from './onset';
 
-export const EVAL_DELAY = 0.22;
+/** First check, after the first note: the analysis window (~0.17 s) is then all post-strum audio. */
+export const FIRST_EVAL = 0.2;
+export const EVAL_EVERY = 0.06;
+/** Quiet time after the last new note before the gesture is judged. */
+export const SETTLE = 0.35;
+export const MAX_GESTURE = 1.6;
+/** Worst-case time from a strum's first note to its final verdict. */
+export const MAX_VERDICT_DELAY = MAX_GESTURE + EVAL_EVERY;
 
 export interface StrumEvent {
+  /** When the gesture's first note started (used for beat timing). */
   onsetTime: number;
   analysis: Analysis;
-  /** The audio around the strum (debug: lets a player save real samples for tuning). */
+  /** Last check of this gesture: reject only on this one. */
+  final: boolean;
+  /** The analyzed audio (debug: lets a player save real samples for tuning). */
   samples: Float32Array;
   sampleRate: number;
 }
 
+interface Gesture {
+  start: number;
+  lastOnset: number;
+  nextEval: number;
+}
+
 export class ListenerCore {
   readonly onsets: OnsetDetector;
-  private pending: number | null = null;
+  private gesture: Gesture | null = null;
+  private quietUntil = -Infinity;
 
   constructor(private sampleRate: number, opts: OnsetOptions) {
     this.onsets = new OnsetDetector(sampleRate, opts);
   }
 
+  /**
+   * Stop analyzing the current gesture (it's been accepted), and ignore new notes until
+   * `now + cooldown` — the tail of a slow strum shouldn't count against the next chord.
+   */
+  endGesture(now: number, cooldown = 0) {
+    this.gesture = null;
+    this.quietUntil = now + cooldown;
+  }
+
   /** `samples` is the most recent audio (≥ 0.25 s), ending at time `now`. */
   feed(samples: Float32Array, now: number): StrumEvent | null {
     const onset = this.onsets.process(samples, now);
-    if (onset !== null && this.pending === null) this.pending = onset;
-    if (this.pending !== null && now >= this.pending + EVAL_DELAY) {
-      const onsetTime = this.pending;
-      this.pending = null;
-      // Trim so the window ends ~EVAL_DELAY after the strum (the analyzer uses the last 0.17 s).
-      const over = Math.max(0, Math.round((now - onsetTime - EVAL_DELAY) * this.sampleRate));
-      const end = Math.max(0, samples.length - over);
-      const window = samples.subarray(0, end);
-      return { onsetTime, analysis: analyze(window, this.sampleRate), samples: window.slice(), sampleRate: this.sampleRate };
+    if (onset !== null && onset >= this.quietUntil) {
+      if (this.gesture) this.gesture.lastOnset = onset;
+      else this.gesture = { start: onset, lastOnset: onset, nextEval: onset + FIRST_EVAL };
     }
-    return null;
+    const g = this.gesture;
+    if (!g || now < g.nextEval) return null;
+
+    const final = now >= g.lastOnset + SETTLE || now >= g.start + MAX_GESTURE;
+    g.nextEval = now + EVAL_EVERY;
+    if (final) this.gesture = null;
+    return { onsetTime: g.start, analysis: analyze(samples, this.sampleRate), final, samples: samples.slice(), sampleRate: this.sampleRate };
   }
 }

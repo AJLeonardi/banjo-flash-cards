@@ -28,7 +28,7 @@ export function DebugMeter({ engine, target }: { engine: AudioEngine; target?: V
           .slice(0, 10)
           .map(([v, i]) => `${midiName(i + LOW_MIDI)}:${v.toFixed(2)}`)
           .join(' ');
-        const verdict = t ? `${t.id} → ${judge(a, t).verdict}` : '';
+        const verdict = (t ? `${t.id} → ${judge(a, t).verdict}` : '') + (ev.final ? ' (final)' : ' (listening…)');
         setText(`${verdict}\ntop: ${top}\nloudest notes: ${notes}`);
       }),
     [engine],

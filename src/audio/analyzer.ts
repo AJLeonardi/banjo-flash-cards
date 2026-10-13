@@ -70,7 +70,7 @@ const TEMPLATES: Template[] = ALL_VOICINGS.map((v) => {
   return { voicing: v, pcKey, penalty: pcKey.split(',').length > 3 ? FOUR_NOTE_PENALTY : 0, semis };
 });
 
-/** Semitone bins LOW_MIDI..HIGH_MIDI: peak magnitude within ±40 cents, compressed. */
+/** Semitone bins LOW_MIDI..HIGH_MIDI: spectral peak within ±40 cents (if any), compressed. */
 export function semitoneSpectrum(samples: Float32Array, sampleRate: number): Float32Array {
   const frame = Math.min(samples.length, Math.round(sampleRate * 0.17));
   const size = 16384;
@@ -81,9 +81,12 @@ export function semitoneSpectrum(samples: Float32Array, sampleRate: number): Flo
     const f = midiToFreq(LOW_MIDI + i);
     const lo = Math.floor((f * Math.pow(2, -0.4 / 12)) / hz);
     const hi = Math.ceil((f * Math.pow(2, 0.4 / 12)) / hz);
-    let peak = 0;
-    for (let b = lo; b <= hi && b < mag.length; b++) peak = Math.max(peak, mag[b]);
-    out[i] = peak;
+    let at = lo;
+    for (let b = lo; b <= hi && b < mag.length; b++) if (mag[b] > mag[at]) at = b;
+    // Only a real peak counts. If the max sits on the range edge and keeps rising
+    // past it, this bin is just the skirt of the neighbouring note (window leakage).
+    const skirt = (at === lo && mag[lo - 1] > mag[lo]) || (at === hi && mag[hi + 1] > mag[hi]);
+    out[i] = skirt ? 0 : mag[at];
   }
   // Normalize, square-root compress, and drop the noise floor.
   const max = Math.max(...out) || 1;

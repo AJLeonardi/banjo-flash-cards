@@ -59,11 +59,17 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
   useEffect(
     () =>
       engine.onStrum((ev) => {
+        if (busy.current) return;
         const target = cur.current;
         const j = judge(ev.analysis, target, { ...DEFAULT_MATCH, checkPosition: settings.checkPosition });
+        // Accept the moment the chord is complete; reject only once the strum is over.
+        if (j.verdict === 'correct') {
+          engine.endGesture();
+          return resultRef.current(true, 'Nice!');
+        }
+        if (!ev.final) return setMessage('Listening…');
         if (j.verdict === 'unclear') return setMessage("Didn't catch that — strum again");
-        if (j.verdict === 'correct') return resultRef.current(true, 'Nice!');
-        if (j.verdict === 'partial') return resultRef.current(false, 'Only heard part of the chord — strum all the strings');
+        if (j.verdict === 'partial') return setMessage('Only heard part of the chord — strum all the strings');
         if (j.verdict === 'wrongPosition')
           return resultRef.current(
             false,
