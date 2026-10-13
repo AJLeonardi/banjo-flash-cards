@@ -94,21 +94,24 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
   return (
     <>
       <MicStatus engine={engine} />
-      <div className={`stage ${flash}`}>
-        <ChordCard voicing={current} showDiagram={settings.showDiagram} />
-        <div className="message">{message}</div>
-      </div>
-      <div className="stats">
-        <div><b>{stats.streak}</b><span>Streak</span></div>
-        <div><b>{stats.best}</b><span>Best</span></div>
-        <div><b>{pct}%</b><span>Accuracy</span></div>
-      </div>
-      <div className="row">
-        <button onClick={() => update({ showDiagram: !settings.showDiagram })}>
-          {settings.showDiagram ? 'Hide' : 'Show'} diagram
-        </button>
-        <span className="spacer" />
-        <button onClick={() => { setCurrent(seq.next()); setMessage(''); }}>Skip →</button>
+      <div className="play">
+        <div className={`stage ${flash}`}>
+          <ChordCard voicing={current} showDiagram={settings.showDiagram}>
+            <div className="message">{message}</div>
+          </ChordCard>
+        </div>
+        <div className="stats">
+          <div><b>{stats.streak}</b><span>Streak</span></div>
+          <div><b>{stats.best}</b><span>Best</span></div>
+          <div><b>{pct}%</b><span>Accuracy</span></div>
+        </div>
+        <div className="row controls">
+          <button onClick={() => update({ showDiagram: !settings.showDiagram })}>
+            {settings.showDiagram ? 'Hide' : 'Show'} diagram
+          </button>
+          <span className="spacer" />
+          <button onClick={() => { setCurrent(seq.next()); setMessage(''); }}>Skip →</button>
+        </div>
       </div>
       {settings.debug && <DebugMeter engine={engine} target={current} />}
     </>

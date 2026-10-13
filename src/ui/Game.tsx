@@ -248,19 +248,20 @@ function Playing({ engine, settings, bpm, maxJump, onDone, onQuit }: {
       <div className="progress"><div style={{ width: `${progress * 100}%` }} /></div>
       <MicStatus engine={engine} />
       <div className={`stage ${flash}`}>
-        {countIn !== null && <div className="countin">{countIn}</div>}
-        <ChordCard voicing={VOICING_BY_ID[cur.voicingId]} showDiagram={settings.showDiagram} diagramSize={170} />
-        <div className="beats">
-          {Array.from({ length: r.beatsPerChord }, (_, i) => (
-            <span key={i} className={i === beatInChord ? 'on' : ''} />
-          ))}
-        </div>
-        {next && (
-          <div className="next">
-            next <b>{VOICING_BY_ID[next.voicingId].chordId}</b> {fretLabel(VOICING_BY_ID[next.voicingId]).toLowerCase()}
+        {countIn !== null && <div className="countin overlay">{countIn}</div>}
+        <ChordCard voicing={VOICING_BY_ID[cur.voicingId]} showDiagram={settings.showDiagram}>
+          <div className="beats">
+            {Array.from({ length: r.beatsPerChord }, (_, i) => (
+              <span key={i} className={i === beatInChord ? 'on' : ''} />
+            ))}
           </div>
-        )}
-        <div className="message">{message}</div>
+          {next && (
+            <div className="next">
+              next <b>{VOICING_BY_ID[next.voicingId].chordId}</b> {fretLabel(VOICING_BY_ID[next.voicingId]).toLowerCase()}
+            </div>
+          )}
+          <div className="message">{message}</div>
+        </ChordCard>
       </div>
       {settings.debug && <DebugMeter engine={engine} target={VOICING_BY_ID[cur.voicingId]} />}
     </>

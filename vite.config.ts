@@ -33,7 +33,7 @@ export default defineConfig(({ command, mode }) => ({
         theme_color: '#16130f',
         background_color: '#16130f',
         display: 'standalone',
-        orientation: 'portrait',
+        orientation: 'any',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
