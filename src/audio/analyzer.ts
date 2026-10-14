@@ -17,6 +17,14 @@ export const HIGH_MIDI = 96; // C7 — stays below the metronome click
 const BINS = HIGH_MIDI - LOW_MIDI + 1;
 const HARMONICS = [1, 0.75, 0.55, 0.45, 0.35, 0.28, 0.22, 0.18];
 const DRONE_WEIGHT = 0.5;
+/**
+ * Below A3 a phone mic (and the banjo head) barely carries the fundamental: an open 4th
+ * string (D3) can peak at ~0.14 of the loudest note even when struck as hard as the rest.
+ * Keep quieter real peaks down there instead of flooring them away.
+ */
+export const LOW_REGISTER = 57; // A3
+export const NOISE_FLOOR = 0.15;
+export const LOW_NOISE_FLOOR = 0.08;
 /** Slight preference for triads, so a ringing harmonic doesn't turn G into G7. */
 const FOUR_NOTE_PENALTY = 0.01;
 
@@ -92,7 +100,7 @@ export function semitoneSpectrum(samples: Float32Array, sampleRate: number): Flo
   const max = Math.max(...out) || 1;
   for (let i = 0; i < BINS; i++) {
     const v = Math.sqrt(out[i] / max);
-    out[i] = v > 0.15 ? v : 0;
+    out[i] = v > (LOW_MIDI + i < LOW_REGISTER ? LOW_NOISE_FLOOR : NOISE_FLOOR) ? v : 0;
   }
   return out;
 }
@@ -106,12 +114,15 @@ export function rmsOf(samples: Float32Array, n = samples.length): number {
 
 export function analyze(samples: Float32Array, sampleRate: number): Analysis {
   const semis = semitoneSpectrum(samples, sampleRate);
-  const chroma = fold(semis);
+  // The faint low peaks are for the per-note checks; in the overall match they'd
+  // mostly add noise, so it sees the full floor everywhere.
+  const matched = semis.map((v) => (v > NOISE_FLOOR ? v : 0));
+  const chroma = fold(matched);
   const pcKeyScores = new Map<string, number>();
   const voicingScores = new Map<string, number>();
   const bestVoicing = new Map<string, string>();
   for (const t of TEMPLATES) {
-    const s = cosine(semis, t.semis);
+    const s = cosine(matched, t.semis);
     voicingScores.set(t.voicing.id, s);
     if (s - t.penalty > (pcKeyScores.get(t.pcKey) ?? -1)) {
       pcKeyScores.set(t.pcKey, s - t.penalty);

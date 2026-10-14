@@ -1,14 +1,15 @@
 // Judges an Analysis against the chord/position the player was asked for.
 
 import { CHORDS, CHORD_BY_ID, Voicing } from '../music/library';
-import { pc } from '../music/notes';
-import { Analysis, LOW_MIDI } from './analyzer';
+import { FIFTH_STRING, pc } from '../music/notes';
+import { Analysis, LOW_MIDI, LOW_NOISE_FLOOR, LOW_REGISTER, NOISE_FLOOR } from './analyzer';
 
 /** `partial` = right notes, but not enough strings rang (e.g. a single plucked string). */
 export type Verdict = 'correct' | 'wrongChord' | 'wrongPosition' | 'partial' | 'unclear';
 
-/** A note counts as sounding if its bin is above the analyzer's noise floor (0.15 of max). */
-const NOTE_PRESENT = 0.16;
+/** A note counts as sounding if its bin is just above the analyzer's noise floor. */
+const NOTE_PRESENT = NOISE_FLOOR + 0.01;
+const LOW_NOTE_PRESENT = LOW_NOISE_FLOOR + 0.01;
 /** Distinct notes (and note names) of the voicing that must be heard at their exact octave. */
 const MIN_STRINGS = 3;
 /** Fretted notes span D3 (open 4th string) to G5 (1st string, fret 17). */
@@ -17,6 +18,13 @@ const FRETBOARD = [50, 79];
 const level = (a: Analysis, midi: number) => a.semis[midi - LOW_MIDI] ?? 0;
 
 const sounding = (a: Analysis, m: number) => level(a, m) >= NOTE_PRESENT;
+/**
+ * When telling apart positions of the chord we asked for, also accept a faint low note
+ * (a phone mic barely hears the open 4th string). Not when deciding which chord it is:
+ * there a faint low peak is more likely noise, and would sway the answer.
+ */
+const expectedSounding = (a: Analysis, m: number) =>
+  level(a, m) >= (m < LOW_REGISTER ? LOW_NOTE_PRESENT : NOTE_PRESENT);
 /**
  * Could this bin just be the 2nd/3rd/4th harmonic of a lower sounding note? Only if that
  * note is reasonably loud: a fading note from the previous chord shouldn't hide a new one.
@@ -30,12 +38,30 @@ const overtone = (a: Analysis, m: number) =>
  * those cover. A lone D3 also shows D4 and A4 (its overtones), but counts as one note
  * (and one note name, which is what keeps a single string from passing).
  */
-export function stringsHeard(a: Analysis, v: Voicing): { notes: number; names: number } {
+export function stringsHeard(a: Analysis, v: Voicing, lowLenient = false): { notes: number; names: number } {
+  const on = lowLenient ? expectedSounding : sounding;
   const notes = new Set(v.midi);
   // If the voicing itself has the octave below (G4 and G5 in a fret-15 G), the upper
   // note can't be told from that note's overtone, so give it the benefit of the doubt.
-  const heard = [...notes].filter((m) => sounding(a, m) && (notes.has(m - 12) || !overtone(a, m)));
+  const heard = [...notes].filter((m) => on(a, m) && (notes.has(m - 12) || !overtone(a, m)));
   return { notes: heard.length, names: new Set(heard.map(pc)).size };
+}
+
+/**
+ * Like stringsHeard().notes, but counting only what tells this position from the others:
+ * the 5th string's note rings in every strum, so it's no evidence, and a note that could
+ * be the overtone of its own octave below is only half a note. (Except above the 5th
+ * string: that overtone is in every strum too, so it can't count against one position.)
+ */
+function positionEvidence(a: Analysis, v: Voicing): number {
+  const notes = new Set(v.midi);
+  let n = 0;
+  for (const m of notes) {
+    if (m === FIFTH_STRING || !expectedSounding(a, m)) continue;
+    if (!overtone(a, m)) n += 1;
+    else if (notes.has(m - 12)) n += m - 12 === FIFTH_STRING ? 1 : 0.5;
+  }
+  return n;
 }
 
 export interface Judgement {
@@ -100,8 +126,9 @@ export function judge(a: Analysis, target: Voicing, opts: MatchOptions = DEFAULT
   // Position: prefer the voicing whose own notes ring at their own octave; spectrum
   // similarity breaks ties. Similarity alone confuses positions an octave apart (G at
   // fret 3 vs fret 15): one's notes are the other's 2nd harmonics.
-  const heardBy = new Map(chord.voicings.map((v) => [v.id, stringsHeard(a, v)]));
-  const rank = (v: Voicing) => heardBy.get(v.id)!.notes + (a.voicingScores.get(v.id) ?? 0);
+  const heardBy = new Map(chord.voicings.map((v) => [v.id, stringsHeard(a, v, true)]));
+  const evidence = new Map(chord.voicings.map((v) => [v.id, positionEvidence(a, v)]));
+  const rank = (v: Voicing) => evidence.get(v.id)! + (a.voicingScores.get(v.id) ?? 0);
   const bestVoicing = chord.voicings.reduce((x, y) => (rank(y) > rank(x) ? y : x));
 
   // Whatever was played must actually ring as a chord: rules out a few strings whose
