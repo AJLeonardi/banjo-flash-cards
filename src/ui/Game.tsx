@@ -3,7 +3,7 @@ import { AudioEngine } from '../audio/engine';
 import { FIRST_EVAL } from '../audio/listener';
 import { DEFAULT_MATCH, judge } from '../audio/matcher';
 import { Metronome } from '../audio/metronome';
-import { Difficulty, DIFFICULTIES, GAME_SECONDS } from '../game/difficulty';
+import { Difficulty, DIFFICULTIES, GAME_SECONDS, gameLevel } from '../game/difficulty';
 import { addScore, tableKey } from '../game/highscores';
 import { GameScorer, targetTimes } from '../game/scoring';
 import { buildPool, Sequencer } from '../game/sequencer';
@@ -11,6 +11,7 @@ import { CHORD_BY_ID, fretLabel, VOICING_BY_ID } from '../music/library';
 import { Settings } from '../settings';
 import { keepAwake } from '../wakelock';
 import { ChordCard } from './ChordCard';
+import { jumpFor } from './ChordPicker';
 import { DebugMeter } from './DebugMeter';
 import { MicStatus } from './MicStatus';
 
@@ -35,23 +36,27 @@ interface Results {
 export function Game({ engine, settings, update, onCalibrate }: { engine: AudioEngine; settings: Settings; update: (p: Partial<Settings>) => void; onCalibrate: () => void }) {
   const [phase, setPhase] = useState<'setup' | 'playing' | 'results'>('setup');
   const [results, setResults] = useState<Results | null>(null);
-  const d = DIFFICULTIES[settings.difficulty];
+  // Chords, positions and max fret jump come from the Home screen, same as Practice.
+  const level = gameLevel(settings.jumpMode, settings.customJump);
+  const d = DIFFICULTIES[level];
   const bpm = settings.bpm ?? d.bpm;
-  const maxJump = settings.gameJump ?? d.maxJump;
-  const custom = settings.bpm !== null || settings.gameJump !== null;
+  const { maxJump, biasFar } = jumpFor(settings.jumpMode, settings.customJump);
+  const custom = bpm !== d.bpm || settings.jumpMode === 'custom';
 
   if (phase === 'playing')
     return (
       <Playing
         engine={engine}
         settings={settings}
+        level={level}
         bpm={bpm}
         maxJump={maxJump}
+        biasFar={biasFar}
         onDone={(scorer) => {
           const hits = scorer.targets.filter((t) => t.result === 'hit');
           const missCount = new Map<string, number>();
           for (const t of scorer.targets) if (t.result === 'miss') missCount.set(t.voicingId, (missCount.get(t.voicingId) ?? 0) + 1);
-          const rank = addScore(tableKey(custom ? 'custom' : settings.difficulty, settings.chords), {
+          const rank = addScore(tableKey(custom ? 'custom' : level, settings.chords), {
             score: scorer.score,
             hits: scorer.hits,
             total: scorer.targets.length,
@@ -78,32 +83,29 @@ export function Game({ engine, settings, update, onCalibrate }: { engine: AudioE
     <div className="stack">
       {phase === 'results' && results && <ResultsCard r={results} />}
       <div className="card stack">
-        <h2>Difficulty</h2>
-        <div className="seg">
-          {(Object.keys(DIFFICULTIES) as Difficulty[]).map((k) => (
-            <button key={k} className={settings.difficulty === k ? 'on' : ''} onClick={() => update({ difficulty: k, bpm: null, gameJump: null })}>
-              {DIFFICULTIES[k].label}
-            </button>
-          ))}
+        <div className="small">
+          <b>{settings.chords.join(' ') || 'No chords selected'}</b> · {positionsLabel(settings.positions)} ·{' '}
+          {settings.jumpMode === 'custom' ? `max jump ${maxJump} frets` : `${d.label} (max jump ${maxJump >= 17 ? 'anywhere' : `${maxJump} frets`})`}
+          <div className="muted">Chords, positions and fret jump are set on the Home screen.</div>
         </div>
+        <label className="stack">
+          <span className="small">
+            Tempo: <b>{bpm} BPM</b>{' '}
+            {bpm === d.bpm ? (
+              <span className="muted">(suggested)</span>
+            ) : (
+              <button className="small" onClick={() => update({ bpm: null })}>reset to {d.bpm}</button>
+            )}
+          </span>
+          <input type="range" min={40} max={160} value={bpm} onChange={(e) => update({ bpm: +e.target.value })} />
+        </label>
         <div className="muted small">
           {d.beatsPerChord} beats per chord · ±{d.windowMs} ms timing window · {GAME_SECONDS / 60} minute game
         </div>
-        <label className="stack">
-          <span className="small">Tempo: {bpm} BPM {settings.bpm !== null && <button className="small" onClick={() => update({ bpm: null })}>reset</button>}</span>
-          <input type="range" min={40} max={160} value={bpm} onChange={(e) => update({ bpm: +e.target.value })} />
-        </label>
-        <label className="stack">
-          <span className="small">
-            Max fret jump: {maxJump >= 17 ? 'anywhere' : `${maxJump} frets`}{' '}
-            {settings.gameJump !== null && <button className="small" onClick={() => update({ gameJump: null })}>reset</button>}
-          </span>
-          <input type="range" min={1} max={17} value={maxJump} onChange={(e) => update({ gameJump: +e.target.value })} />
-        </label>
-        {custom && <div className="muted small">Custom settings are scored on a separate high-score table.</div>}
+        {custom && <div className="muted small">A custom tempo or fret jump is scored on a separate high-score table.</div>}
       </div>
       <div className="card small muted">
-        Chords: <b>{settings.chords.join(' ') || 'none selected'}</b>. Strum on the first beat of each chord: on time and correct = +1, missed = −1.
+        Strum on the first beat of each chord: on time and correct = +1, missed = −1.
         Wired headphones keep the click out of the mic.
         {settings.latencyMs === 0 && (
           <> <button onClick={onCalibrate}>Calibrate timing first</button></>
@@ -114,6 +116,11 @@ export function Game({ engine, settings, update, onCalibrate }: { engine: AudioE
       </button>
     </div>
   );
+}
+
+function positionsLabel(positions: number[]) {
+  if (!positions.length) return 'all positions';
+  return `position${positions.length > 1 ? 's' : ''} ${positions.map((p) => (p === 5 ? '5+' : p)).join(', ')}`;
 }
 
 function ResultsCard({ r }: { r: Results }) {
@@ -138,11 +145,13 @@ function ResultsCard({ r }: { r: Results }) {
   );
 }
 
-function Playing({ engine, settings, bpm, maxJump, onDone, onQuit }: {
+function Playing({ engine, settings, level, bpm, maxJump, biasFar, onDone, onQuit }: {
   engine: AudioEngine;
   settings: Settings;
+  level: Difficulty;
   bpm: number;
   maxJump: number;
+  biasFar: boolean;
   onDone: (s: GameScorer) => void;
   onQuit: () => void;
 }) {
@@ -159,12 +168,12 @@ function Playing({ engine, settings, bpm, maxJump, onDone, onQuit }: {
   };
 
   useEffect(() => {
-    const d = DIFFICULTIES[settings.difficulty];
+    const d = DIFFICULTIES[level];
     const ctx = engine.ctx;
     const start = ctx.currentTime + 0.6;
     const beat = 60 / bpm;
     const times = targetTimes(start, bpm, d.beatsPerChord, GAME_SECONDS);
-    const seq = new Sequencer(buildPool(settings.chords, settings.positions), maxJump, d.biasFar && settings.gameJump === null);
+    const seq = new Sequencer(buildPool(settings.chords, settings.positions), maxJump, biasFar);
     const ids = times.map(() => seq.next().id);
     const end = times[times.length - 1] + d.beatsPerChord * beat;
     run.current = { scorer: new GameScorer(times, ids, d.windowMs / 1000), start, beat, beatsPerChord: d.beatsPerChord, window: d.windowMs / 1000, end };
@@ -178,7 +187,15 @@ function Playing({ engine, settings, bpm, maxJump, onDone, onQuit }: {
       const pending = r.scorer.targets.filter((x) => x.result === 'pending');
       if (!pending.length) return;
       const near = pending.reduce((a, b) => (Math.abs(b.time - t) < Math.abs(a.time - t) ? b : a));
-      if (Math.abs(near.time - t) > r.window) return; // off-beat strum: ignored
+      if (Math.abs(near.time - t) > r.window) {
+        // Off-beat strums don't score. But if it was the right chord, say how far off it
+        // was, rather than leaving a good strum with no response at all.
+        const closest = r.scorer.targets.reduce((a, b) => (Math.abs(b.time - t) < Math.abs(a.time - t) ? b : a));
+        const off = t - closest.time;
+        if (Math.abs(off) > r.window && Math.abs(off) < r.beat / 2 && closest.result !== 'hit' && judgeFn(closest.voicingId).ok)
+          setMessage(`Right chord, but ${Math.round(Math.abs(off) * 1000)} ms ${off < 0 ? 'early' : 'late'}`);
+        return;
+      }
       const { ok, heard } = judgeFn(near.voicingId);
       if (ok) engine.endGesture(0.3);
       if (r.scorer.strum(t, near.voicingId, ok)) {

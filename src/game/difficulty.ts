@@ -18,3 +18,13 @@ export const DIFFICULTIES: Record<Difficulty, DifficultyInfo> = {
 };
 
 export const GAME_SECONDS = 120;
+
+/**
+ * The game follows the Home screen's max fret jump: Easy, Medium or Hard also set the
+ * suggested tempo, beats per chord and timing window. A custom jump uses the level
+ * whose jump it's closest to.
+ */
+export function gameLevel(jumpMode: Difficulty | 'custom', customJump: number): Difficulty {
+  if (jumpMode !== 'custom') return jumpMode;
+  return customJump <= DIFFICULTIES.easy.maxJump ? 'easy' : customJump <= DIFFICULTIES.medium.maxJump ? 'medium' : 'hard';
+}

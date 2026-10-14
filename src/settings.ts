@@ -15,10 +15,8 @@ export interface Settings {
   sensitivity: number;
   latencyMs: number;
   clickVolume: number;
-  difficulty: Difficulty;
-  /** Game overrides; null = use the difficulty's default. */
+  /** Game tempo; null = the one suggested for the max fret jump. */
   bpm: number | null;
-  gameJump: number | null;
   debug: boolean;
 }
 
@@ -32,9 +30,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sensitivity: 0.6,
   latencyMs: 0,
   clickVolume: 0.7,
-  difficulty: 'easy',
   bpm: null,
-  gameJump: null,
   debug: false,
 };
 
