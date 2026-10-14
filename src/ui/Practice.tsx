@@ -12,6 +12,13 @@ import { MicStatus } from './MicStatus';
 
 type Flash = '' | 'good' | 'bad';
 
+/** The chord to play, with the one before and the one after it (picked one ahead). */
+interface View {
+  prev?: Voicing;
+  current: Voicing;
+  next: Voicing;
+}
+
 /** For this long after a chord is accepted, hearing that chord again is its sustain, not a mistake. */
 const SUSTAIN_GRACE = 2;
 
@@ -21,7 +28,8 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
     return new Sequencer(buildPool(settings.chords, settings.positions), maxJump, biasFar);
   }, [settings.chords, settings.positions, settings.jumpMode, settings.customJump]);
 
-  const [current, setCurrent] = useState<Voicing>(() => seq.next());
+  const [view, setView] = useState<View>(() => ({ current: seq.next(), next: seq.next() }));
+  const current = view.current;
   const [flash, setFlash] = useState<Flash>('');
   const [message, setMessage] = useState('Strum all the strings');
   const [stats, setStats] = useState({ tries: 0, right: 0, streak: 0, best: 0 });
@@ -30,8 +38,15 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
   /** The chord just accepted, and when: its ring-out mustn't be judged against the next card. */
   const prev = useRef<{ voicing: Voicing; at: number } | null>(null);
   cur.current = current;
+  const viewRef = useRef(view);
+  viewRef.current = view;
 
-  useEffect(() => setCurrent(seq.next()), [seq]);
+  const advance = () => {
+    const v = viewRef.current;
+    setView({ prev: v.current, current: v.next, next: seq.next() });
+  };
+
+  useEffect(() => setView({ current: seq.next(), next: seq.next() }), [seq]);
 
   useEffect(() => {
     void keepAwake(true);
@@ -49,7 +64,7 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
     if (ok) {
       busy.current = true;
       setTimeout(() => {
-        setCurrent(seq.next());
+        advance();
         setFlash('');
         setMessage('');
         busy.current = false;
@@ -108,7 +123,7 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
       <MicStatus engine={engine} />
       <div className="play">
         <div className={`stage ${flash}`}>
-          <ChordCard voicing={current} showDiagram={settings.showDiagram}>
+          <ChordCard voicing={current} prev={view.prev} next={view.next} showDiagram={settings.showDiagram}>
             <div className="message">{message}</div>
           </ChordCard>
         </div>
@@ -122,7 +137,7 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
             {settings.showDiagram ? 'Hide' : 'Show'} diagram
           </button>
           <span className="spacer" />
-          <button onClick={() => { setCurrent(seq.next()); setMessage(''); }}>Skip →</button>
+          <button onClick={() => { advance(); setMessage(''); }}>Skip →</button>
         </div>
       </div>
       {settings.debug && <DebugMeter engine={engine} target={current} />}

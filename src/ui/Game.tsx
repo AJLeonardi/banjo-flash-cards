@@ -228,7 +228,9 @@ function Playing({ engine, settings, bpm, maxJump, onDone, onQuit }: {
   const now = engine.ctx.currentTime;
   const targets = r.scorer.targets;
   const idx = targets.findIndex((t) => t.time + r.window > now);
-  const cur = targets[idx === -1 ? targets.length - 1 : idx];
+  const curIdx = idx === -1 ? targets.length - 1 : idx;
+  const cur = targets[curIdx];
+  const prev = targets[curIdx - 1];
   const next = idx >= 0 ? targets[idx + 1] : undefined;
   const beatNo = Math.floor((now - r.start) / r.beat + 0.001);
   const countIn = beatNo < 4 ? 4 - Math.max(0, beatNo) : null;
@@ -249,17 +251,17 @@ function Playing({ engine, settings, bpm, maxJump, onDone, onQuit }: {
       <MicStatus engine={engine} />
       <div className={`stage ${flash}`}>
         {countIn !== null && <div className="countin overlay">{countIn}</div>}
-        <ChordCard voicing={VOICING_BY_ID[cur.voicingId]} showDiagram={settings.showDiagram}>
+        <ChordCard
+          voicing={VOICING_BY_ID[cur.voicingId]}
+          prev={prev && VOICING_BY_ID[prev.voicingId]}
+          next={next && VOICING_BY_ID[next.voicingId]}
+          showDiagram={settings.showDiagram}
+        >
           <div className="beats">
             {Array.from({ length: r.beatsPerChord }, (_, i) => (
               <span key={i} className={i === beatInChord ? 'on' : ''} />
             ))}
           </div>
-          {next && (
-            <div className="next">
-              next <b>{VOICING_BY_ID[next.voicingId].chordId}</b> {fretLabel(VOICING_BY_ID[next.voicingId]).toLowerCase()}
-            </div>
-          )}
           <div className="message">{message}</div>
         </ChordCard>
       </div>
