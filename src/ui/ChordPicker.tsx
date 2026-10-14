@@ -7,6 +7,8 @@ import { CHORD_TYPES } from '../music/shapes';
 import { JumpMode, Settings } from '../settings';
 
 const PRESETS = ['G C D', 'G C D7', 'G C D Em', 'A D E', 'C F G Am', 'D G A Bm', 'E A B7'];
+/** One chord up and down the neck. */
+const SINGLES = ['G', 'C', 'D', 'E', 'A'];
 
 export function ChordPicker({ settings, update }: { settings: Settings; update: (p: Partial<Settings>) => void }) {
   const [text, setText] = useState(settings.chords.join(' '));
@@ -18,6 +20,12 @@ export function ChordPicker({ settings, update }: { settings: Settings; update: 
     update({ chords: ids });
     setText(ids.join(' '));
     setBad([]);
+  };
+  // Every position, and a medium jump: with easy's 3 frets, a lone chord can only
+  // bounce between two neighbouring positions.
+  const drillOne = (id: string) => {
+    setChords([id]);
+    update({ positions: [], jumpMode: 'medium' });
   };
   const toggle = (id: string) => setChords(selected.has(id) ? settings.chords.filter((c) => c !== id) : [...settings.chords, id]);
   const togglePos = (p: number) => {
@@ -48,6 +56,14 @@ export function ChordPicker({ settings, update }: { settings: Settings; update: 
           {PRESETS.map((p) => (
             <button key={p} onClick={() => setChords(parseChordList(p).ids)}>
               {p}
+            </button>
+          ))}
+        </div>
+        <div className="muted small">One chord, every position</div>
+        <div className="chips">
+          {SINGLES.map((id) => (
+            <button key={id} onClick={() => drillOne(id)}>
+              {id}
             </button>
           ))}
         </div>
