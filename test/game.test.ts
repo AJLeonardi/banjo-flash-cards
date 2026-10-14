@@ -43,6 +43,26 @@ describe('sequencer', () => {
     const one = new Sequencer(buildPool(['G'], [1]), 3);
     expect(one.next().id).toBe(one.next().id);
   });
+
+  it("one chord on a medium jump doesn't get stuck bouncing between two positions", () => {
+    // G's fret-15 shape can only reach fret 12; from 12 it could go back to 15, or on to 7.
+    const pool = buildPool(['G']);
+    let allLongest = 0;
+    for (let seed = 1; seed <= 20; seed++) {
+      const seq = new Sequencer(pool, 7, false, seeded(seed));
+      const ids = Array.from({ length: 300 }, () => seq.next().id);
+      let streak = 0, longest = 0;
+      for (let i = 2; i < ids.length; i++) {
+        streak = ids[i] === ids[i - 2] ? streak + 1 : 0;
+        longest = Math.max(longest, streak);
+      }
+      // Three round trips (A B A B A B A), plus one forced move back: fret 15 can only go to 12.
+      expect(longest, `seed ${seed}`).toBeLessThanOrEqual(6);
+      expect(new Set(ids).size).toBe(pool.length);
+      allLongest = Math.max(allLongest, longest);
+    }
+    expect(allLongest, 'still bounces a bit').toBeGreaterThanOrEqual(3);
+  });
 });
 
 describe('scoring', () => {

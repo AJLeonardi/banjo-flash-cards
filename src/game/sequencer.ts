@@ -10,8 +10,18 @@ export function buildPool(chordIds: string[], positions: number[] = []): Voicing
     .filter((v) => want.size === 0 || want.has(Math.min(v.position, 5)));
 }
 
+/**
+ * Going back and forth between two shapes is good practice, but not forever: after
+ * three round trips (A B A B A B A), move on if there's anywhere else to go. One chord
+ * on a medium jump would otherwise bounce at random between frets 12 and 15.
+ */
+const MAX_RETURNS = 5;
+
 export class Sequencer {
   private prev: Voicing | null = null;
+  private beforePrev: Voicing | null = null;
+  /** How many picks in a row went back to the shape played two picks earlier. */
+  private returns = 0;
 
   constructor(
     private pool: Voicing[],
@@ -26,7 +36,8 @@ export class Sequencer {
     if (!prev || this.pool.length === 1) {
       choice = this.pool[Math.floor(this.rand() * this.pool.length)];
     } else {
-      const others = this.pool.filter((v) => v.id !== prev.id);
+      let others = this.pool.filter((v) => v.id !== prev.id);
+      if (this.returns >= MAX_RETURNS && others.length > 1) others = others.filter((v) => v !== this.beforePrev);
       // Loosen the jump limit gradually if nothing fits (e.g. only one chord selected).
       let cands: Voicing[] = [];
       for (let jump = this.maxJump; cands.length === 0; jump += 2) {
@@ -46,6 +57,8 @@ export class Sequencer {
         }
       }
     }
+    this.returns = choice === this.beforePrev ? this.returns + 1 : 0;
+    this.beforePrev = prev;
     this.prev = choice;
     return choice;
   }
