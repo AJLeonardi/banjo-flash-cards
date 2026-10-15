@@ -198,25 +198,27 @@ th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: upp
 /* ---- chord card: info + diagram ---- */
 .chord-card { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
 .chord-info { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; overflow-x: clip; }
-/* Previous · current · next. The side columns share what's left of the width. (The
-   slide-in starts off to the right; .chord-info clips it so the page doesn't scroll.) */
-.carousel {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; width: 100%;
-  animation: carousel-in 0.3s ease-out;
+/* Previous · current · next, stacked in one grid cell (so the row is as tall as the
+   current chord) and moved into place by ChordCard's transforms. .chord-info clips
+   whatever slides past the card's edge. */
+.carousel { display: grid; place-items: center; width: 100%; }
+.carousel > .chord-head {
+  grid-area: 1 / 1; position: relative; white-space: nowrap;
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.45s;
 }
-@keyframes carousel-in {
-  from { transform: translateX(18%); opacity: 0.3; }
+.carousel .chord-name { transition: color 0.45s; }
+.carousel .chord-fret { transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: top center; }
+.carousel > .chord-head:not(.slot0) .chord-name { color: var(--text); }
+/* Side chords are drawn at a third of the size; the fret would be too small to read. */
+.carousel > .chord-head:not(.slot0) .chord-fret { transform: scale(1.7); }
+/* Scaled down with its chord, so it's drawn about a third of this size. */
+.next-label {
+  position: absolute; bottom: calc(100% + 6px); left: 0; right: 0;
+  font-size: 32px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
 }
 @media (prefers-reduced-motion: reduce) {
-  .carousel { animation: none; }
+  .carousel > .chord-head, .carousel .chord-name, .carousel .chord-fret { transition: none; }
 }
-.peek { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; text-align: center; }
-.peek b { font-size: clamp(24px, 8vw, 44px); font-weight: 800; line-height: 1; letter-spacing: -0.02em; max-width: 100%; overflow: hidden; }
-.peek span { font-size: 13px; color: var(--muted); white-space: nowrap; }
-.peek small { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
-/* The last chord is just for context; the next one is what to get ready for. */
-.peek.prev { opacity: 0.35; }
-.peek.next b { color: var(--text); }
 .chord-diagram svg { display: block; width: auto; height: min(230px, 32dvh); }
 .play { display: flex; flex-direction: column; gap: 16px; flex: 1; }
 .countin.overlay {
@@ -238,7 +240,6 @@ th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: upp
   .stage { padding: 10px 16px; gap: 6px; }
   .chord-card { flex-direction: row; justify-content: center; gap: clamp(16px, 5vw, 56px); }
   .chord-info { gap: 8px; min-width: 0; width: auto; flex: 1 1 auto; max-width: 560px; }
-  .peek b { font-size: clamp(22px, 10dvh, 44px); }
   .chord-name { font-size: clamp(56px, 24dvh, 130px); }
   .chord-fret { padding: 6px 14px; }
   .chord-fret b { font-size: clamp(22px, 8dvh, 34px); }

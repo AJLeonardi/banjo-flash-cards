@@ -14,6 +14,8 @@ type Flash = '' | 'good' | 'bad';
 
 /** The chord to play, with the one before and the one after it (picked one ahead). */
 interface View {
+  /** Counts cards shown; the carousel animates when it goes up by one. */
+  step: number;
   prev?: Voicing;
   current: Voicing;
   next: Voicing;
@@ -28,7 +30,7 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
     return new Sequencer(buildPool(settings.chords, settings.positions), maxJump, biasFar);
   }, [settings.chords, settings.positions, settings.jumpMode, settings.customJump]);
 
-  const [view, setView] = useState<View>(() => ({ current: seq.next(), next: seq.next() }));
+  const [view, setView] = useState<View>(() => ({ step: 0, current: seq.next(), next: seq.next() }));
   const current = view.current;
   const [flash, setFlash] = useState<Flash>('');
   const [message, setMessage] = useState('Strum all the strings');
@@ -43,10 +45,11 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
 
   const advance = () => {
     const v = viewRef.current;
-    setView({ prev: v.current, current: v.next, next: seq.next() });
+    setView({ step: v.step + 1, prev: v.current, current: v.next, next: seq.next() });
   };
 
-  useEffect(() => setView({ current: seq.next(), next: seq.next() }), [seq]);
+  // New settings: a fresh set of cards (skip a step, so none of them animate in from the old ones).
+  useEffect(() => setView((v) => ({ step: v.step + 2, current: seq.next(), next: seq.next() })), [seq]);
 
   useEffect(() => {
     void keepAwake(true);
@@ -123,7 +126,7 @@ export function Practice({ engine, settings, update }: { engine: AudioEngine; se
       <MicStatus engine={engine} />
       <div className="play">
         <div className={`stage ${flash}`}>
-          <ChordCard voicing={current} prev={view.prev} next={view.next} showDiagram={settings.showDiagram}>
+          <ChordCard voicing={current} prev={view.prev} next={view.next} step={view.step} showDiagram={settings.showDiagram}>
             <div className="message">{message}</div>
           </ChordCard>
         </div>
