@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { CSSProperties, ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CHORD_BY_ID, Voicing } from '../music/library';
 import { ChordDiagram } from './ChordDiagram';
 
@@ -9,13 +9,15 @@ import { ChordDiagram } from './ChordDiagram';
  *
  * `prev` and `next` sit small on either side of the name: the next chord is there to
  * get your hand moving early. `step` counts chords played; when it goes up, each chord
- * slides one slot left and grows or shrinks into its new size.
+ * slides one slot left and grows or shrinks into its new size. With a click (`bpm`),
+ * the slide takes one beat, so it keeps pace with the tempo.
  */
-export function ChordCard({ voicing, prev, next, step, showDiagram, children }: {
+export function ChordCard({ voicing, prev, next, step, bpm, showDiagram, children }: {
   voicing: Voicing;
   prev?: Voicing;
   next?: Voicing;
   step: number;
+  bpm?: number;
   showDiagram: boolean;
   children?: ReactNode;
 }) {
@@ -23,7 +25,7 @@ export function ChordCard({ voicing, prev, next, step, showDiagram, children }: 
   return (
     <div className="chord-card">
       <div className="chord-info">
-        <Carousel prev={prev} current={voicing} next={next} step={step} />
+        <Carousel prev={prev} current={voicing} next={next} step={step} slideMs={slideTime(bpm)} />
         <div className="pos-dots" aria-label={`Voicing ${voicing.position} of ${total}, counting from the nut`}>
           {Array.from({ length: total }, (_, i) => (
             <span key={i} className={i + 1 === voicing.position ? 'on' : ''} />
@@ -47,8 +49,11 @@ const SIDE_SCALE = 0.34;
 const SIDE_PILL_SCALE = 1.7;
 const GAP = 14;
 const OPACITY: Record<Slot, number> = { [-2]: 0, [-1]: 0.35, 0: 1, 1: 0.9, 2: 0 };
-/** How long a chord that has slid off the left stays rendered (the CSS transition time). */
-const LEAVE_MS = 450;
+
+/** One beat with a click (kept between 0.3 and 1 s); without one, a relaxed 0.7 s. */
+function slideTime(bpm?: number) {
+  return bpm ? Math.min(1000, Math.max(300, 60000 / bpm)) : 700;
+}
 
 interface Item {
   key: number;
@@ -62,7 +67,13 @@ interface Item {
  * sets a transform: the current chord full size in the middle, the others scaled down
  * to either side. Changing a transform is all it takes for CSS to animate the move.
  */
-function Carousel({ prev, current, next, step }: { prev?: Voicing; current: Voicing; next?: Voicing; step: number }) {
+function Carousel({ prev, current, next, step, slideMs }: {
+  prev?: Voicing;
+  current: Voicing;
+  next?: Voicing;
+  step: number;
+  slideMs: number;
+}) {
   const box = useRef<HTMLDivElement>(null);
   const placed = useRef(new Set<number>());
   // When the sequence moves on by one, the old previous chord stays a moment to slide
@@ -80,7 +91,7 @@ function Carousel({ prev, current, next, step }: { prev?: Voicing; current: Voic
     const t = setTimeout(() => {
       seen.current.leaving = null;
       rerender((n) => n + 1);
-    }, LEAVE_MS);
+    }, slideMs);
     return () => clearTimeout(t);
   }, [step]);
 
@@ -138,7 +149,7 @@ function Carousel({ prev, current, next, step }: { prev?: Voicing; current: Voic
   }, []);
 
   return (
-    <div className="carousel" ref={box}>
+    <div className="carousel" ref={box} style={{ '--slide': `${slideMs}ms` } as CSSProperties}>
       {items.map((it) => (
         <div key={it.key} data-key={it.key} className={`chord-head slot${it.slot}`} aria-hidden={it.slot !== 0}>
           {it.slot === 1 && <small className="next-label">Next</small>}

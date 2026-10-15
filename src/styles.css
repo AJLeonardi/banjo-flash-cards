@@ -201,13 +201,13 @@ th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: upp
 /* Previous · current · next, stacked in one grid cell (so the row is as tall as the
    current chord) and moved into place by ChordCard's transforms. .chord-info clips
    whatever slides past the card's edge. */
-.carousel { display: grid; place-items: center; width: 100%; }
+.carousel { display: grid; place-items: center; width: 100%; --slide: 0.7s; /* set by ChordCard */ }
 .carousel > .chord-head {
   grid-area: 1 / 1; position: relative; white-space: nowrap;
-  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.45s;
+  transition: transform var(--slide) cubic-bezier(0.2, 0.8, 0.2, 1), opacity var(--slide);
 }
-.carousel .chord-name { transition: color 0.45s; }
-.carousel .chord-fret { transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: top center; }
+.carousel .chord-name { transition: color var(--slide); }
+.carousel .chord-fret { transition: transform var(--slide) cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: top center; }
 .carousel > .chord-head:not(.slot0) .chord-name { color: var(--text); }
 /* Side chords are drawn at a third of the size; the fret would be too small to read. */
 .carousel > .chord-head:not(.slot0) .chord-fret { transform: scale(1.7); }

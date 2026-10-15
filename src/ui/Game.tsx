@@ -273,6 +273,7 @@ function Playing({ engine, settings, level, bpm, maxJump, biasFar, onDone, onQui
           prev={prev && VOICING_BY_ID[prev.voicingId]}
           next={next && VOICING_BY_ID[next.voicingId]}
           step={curIdx}
+          bpm={bpm}
           showDiagram={settings.showDiagram}
         >
           <div className="beats">
